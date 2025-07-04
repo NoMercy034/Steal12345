@@ -1,107 +1,210 @@
--- Auto Steal مطور: يسرق ويرجع للقاعدة
--- + GUI + ESP + Fly
+-- NoMercy Hub 💀 - سكربت متكامل بـ GUI احترافي
+-- الميزات: AutoSteal, ESP, Fly, Speed, أصوات وأسم "NoMercy034"
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HRP = Character:WaitForChild("HumanoidRootPart")
+local HRP = LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+local UIS = game:GetService("UserInputService")
 
--- GUI
+-- 🧩 Variables
+local runningAuto, runningESP, runningFly, runningSpeed = false, false, false, false
+local flyForce
+
+-- 🎵 أصوات
+local Sound = Instance.new("Sound", HRP)
+Sound.SoundId = "rbxassetid://12222105" -- مثال: صوت زر (تقدر تغيّره)
+Sound.Volume = 1
+
+-- 🎨 GUI التصميم
 local gui = Instance.new("ScreenGui", game.CoreGui)
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 200, 0, 150)
-frame.Position = UDim2.new(0, 100, 0, 100)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Size = UDim2.new(0, 300, 0, 350)
+frame.Position = UDim2.new(0, 200, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
 
-local button = Instance.new("TextButton", frame)
-button.Size = UDim2.new(0, 120, 0, 50)
-button.Position = UDim2.new(0.5, -60, 0.2, 0)
-button.Text = "Auto Steal"
-button.BackgroundColor3 = Color3.fromRGB(70, 130, 180)
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundTransparency = 1
+title.Text = "NoMercy Hub 💀"
+title.TextScaled = true
+title.TextColor3 = Color3.fromRGB(255, 85, 85)
+title.Font = Enum.Font.GothamBold
 
-local close = Instance.new("TextButton", frame)
-close.Size = UDim2.new(0, 100, 0, 30)
-close.Position = UDim2.new(0.5, -50, 0.7, 0)
-close.Text = "Close GUI"
-
-local open = Instance.new("TextButton", gui)
-open.Size = UDim2.new(0, 100, 0, 30)
+-- زر Open بصورة البادج
+local open = Instance.new("ImageButton", gui)
+open.Size = UDim2.new(0, 60, 0, 60)
 open.Position = UDim2.new(0, 10, 0, 10)
-open.Text = "Open GUI"
+open.Image = "rbxassetid://4094500112762930"
+open.BackgroundTransparency = 1
 open.Visible = false
 
+-- زر Close
+local close = Instance.new("TextButton", frame)
+close.Size = UDim2.new(0, 100, 0, 40)
+close.Position = UDim2.new(1, -110, 0, 10)
+close.Text = "Close"
+close.TextColor3 = Color3.new(1,1,1)
+close.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+close.Font = Enum.Font.GothamSemibold
+close.TextSize = 20
+
 close.MouseButton1Click:Connect(function()
-	frame.Visible = false
-	open.Visible = true
+    Sound:Play()
+    frame.Visible = false
+    open.Visible = true
 end)
 
 open.MouseButton1Click:Connect(function()
-	frame.Visible = true
-	open.Visible = false
+    Sound:Play()
+    frame.Visible = true
+    open.Visible = false
 end)
 
--- وظيفة الانتقال التدريجي
-local function goTo(part)
-	if not part then return end
-	local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-	if not root then return end
-
-	local distance = (root.Position - part.Position).Magnitude
-	local steps = math.floor(distance / 5)
-	for i = 1, steps do
-		root.CFrame = root.CFrame:Lerp(CFrame.new(part.Position + Vector3.new(0, 3, 0)), 0.1)
-		task.wait(0.01)
-	end
+-- 🛠️ زرّات Toggle
+local function makeToggle(text, y)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0, 260, 0, 40)
+    btn.Position = UDim2.new(0, 20, 0, y)
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 18
+    return btn
 end
 
--- إيجاد أقرب Brainroot
+local btnSteal = makeToggle("Toggle Auto Steal", 70)
+local btnESP   = makeToggle("Toggle ESP", 120)
+local btnFly   = makeToggle("Toggle Fly", 170)
+local btnSpeed = makeToggle("Toggle Speed", 220)
+
+-- 🌟 مزايا السكربت
 local function getClosestBrain()
-	local closest, dist = nil, math.huge
-	for _,v in pairs(workspace:GetDescendants()) do
-		if v.Name == "StealHitbox" and v:IsA("Part") then
-			local d = (HRP.Position - v.Position).Magnitude
-			if d < dist then
-				closest = v
-				dist = d
-			end
-		end
-	end
-	return closest
+    local closest, dist = nil, math.huge
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v.Name=="StealHitbox" and v:IsA("Part") then
+            local d = (HRP.Position - v.Position).Magnitude
+            if d < dist then
+                closest, dist = v, d
+            end
+        end
+    end
+    return closest
 end
 
--- إيجاد قاعدة اللاعب
 local function getMyBase()
-	for _,v in pairs(workspace:GetDescendants()) do
-		if v:IsA("TouchTransmitter") and v.Parent:IsA("Part") and v.Parent.Name:lower():find("score") then
-			return v.Parent
-		end
-	end
-	return nil
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("TouchTransmitter") and v.Parent:IsA("Part") and v.Parent.Name:lower():find("score") then
+            return v.Parent
+        end
+    end
+    return nil
 end
 
--- المهمة الرئيسية
-local function autoSteal()
-	while true do
-		task.wait(1)
-		local brain = getClosestBrain()
-		if brain then
-			goTo(brain)
-			task.wait(0.2)
-			firetouchinterest(HRP, brain, 0)
-			firetouchinterest(HRP, brain, 1)
-			task.wait(0.2)
-
-			local base = getMyBase()
-			if base then
-				goTo(base)
-				firetouchinterest(HRP, base, 0)
-				firetouchinterest(HRP, base, 1)
-			end
-		end
-	end
+local function goTo(part)
+    if not part then return end
+    for i=1,50 do
+        HRP.CFrame = HRP.CFrame:Lerp(CFrame.new(part.Position + Vector3.new(0,3,0)), 0.1)
+        task.wait(0.01)
+    end
 end
 
--- زر التشغيل
-button.MouseButton1Click:Connect(function()
-	autoSteal()
+-- 🛠 Auto Steal
+coroutine.wrap(function()
+    while task.wait(1) do
+        if runningAuto then
+            local b = getClosestBrain()
+            if b then
+                goTo(b)
+                firetouchinterest(HRP, b, 0)
+                firetouchinterest(HRP, b, 1)
+                task.wait(0.5)
+                local base = getMyBase()
+                if base then
+                    goTo(base)
+                    firetouchinterest(HRP, base, 0)
+                    firetouchinterest(HRP, base, 1)
+                end
+            end
+        end
+    end
+end)()
+
+-- 🛠 ESP
+coroutine.wrap(function()
+    while task.wait(1) do
+        if runningESP then
+            for _,v in pairs(Players:GetPlayers()) do
+                if v~=LocalPlayer and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                    if not v.Character:FindFirstChild("ESPBox") then
+                        local box=Instance.new("BoxHandleAdornment", v.Character)
+                        box.Name = "ESPBox"
+                        box.Adornee = v.Character.HumanoidRootPart
+                        box.Size = Vector3.new(4,5,2)
+                        box.Color3 = Color3.fromRGB(0,255,0)
+                        box.AlwaysOnTop = true
+                        box.Transparency = 0.5
+                    end
+                end
+            end
+        else
+            for _,v in pairs(Players:GetPlayers()) do
+                pcall(function()
+                    local c=v.Character:FindFirstChild("ESPBox")
+                    if c then c:Destroy() end
+                end)
+            end
+        end
+    end
+end)()
+
+-- 🛠 Fly toggle
+btnFly.MouseButton1Click:Connect(function()
+    Sound:Play()
+    runningFly = not runningFly
+    if runningFly then
+        flyForce = Instance.new("BodyVelocity", HRP)
+        flyForce.MaxForce = Vector3.new(9e4,9e4,9e4)
+        flyForce.Velocity = Vector3.new(0,0,0)
+        coroutine.wrap(function()
+            while runningFly and flyForce.Parent do
+                flyForce.Velocity = LocalPlayer:GetMouse().Hit.LookVector * 50
+                task.wait()
+            end
+        end)()
+    else
+        if flyForce then flyForce:Destroy() end
+    end
+end)
+
+-- 🛠 Speed toggle
+btnSpeed.MouseButton1Click:Connect(function()
+    Sound:Play()
+    runningSpeed = not runningSpeed
+    local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then hum.WalkSpeed = runningSpeed and 32 or 16 end
+end)
+
+-- 🛠 Auto Steal toggle
+btnSteal.MouseButton1Click:Connect(function()
+    Sound:Play()
+    runningAuto = not runningAuto
+    btnSteal.BackgroundColor3 = runningAuto and Color3.fromRGB(50,150,50) or Color3.fromRGB(70,70,70)
+end)
+
+-- 🛠 ESP toggle
+btnESP.MouseButton1Click:Connect(function()
+    Sound:Play()
+    runningESP = not runningESP
+    btnESP.BackgroundColor3 = runningESP and Color3.fromRGB(50,150,50) or Color3.fromRGB(70,70,70)
+end)
+
+-- ❗ اغلاق الواجهة بلوحة المفاتيح
+UIS.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        frame.Visible = not frame.Visible
+        open.Visible = not open.Visible
+        Sound:Play()
+    end
 end)
