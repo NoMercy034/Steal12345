@@ -1,174 +1,283 @@
+-- SpeedHub-like UI for Steal a Brainroot
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local HRP = LocalPlayer.Character:WaitForChild("HumanoidRootPart")
 local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
-local runningAuto, runningESP, runningFly, runningSpeed = false, false, false, false
-local flyForce
+local player = LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local HRP = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
 
-local Sound = Instance.new("Sound", HRP)
-Sound.SoundId = "rbxassetid://12222105"
-Sound.Volume = 1
+-- Variables
+local autoSteal = false
+local espEnabled = false
+local flyEnabled = false
+local speedValue = 16
+local flyVelocity
 
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.ResetOnSpawn = false
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SpeedHubStealBrainroot"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = game.CoreGui
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0.3, 0, 0.5, 0) -- 30% عرض الشاشة، 50% ارتفاع الشاشة
-frame.Position = UDim2.new(0.35, 0, 0.25, 0) -- بمركز الشاشة
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+-- Main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 350, 0, 450)
+frame.Position = UDim2.new(0.5, -175, 0.5, -225)
+frame.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 frame.BorderSizePixel = 0
+frame.Parent = screenGui
 frame.Active = true
+frame.Draggable = true
 
-local uiCorner = Instance.new("UICorner", frame)
-uiCorner.CornerRadius = UDim.new(0, 15)
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = frame
 
-local title = Instance.new("TextLabel", frame)
+-- Title
+local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 60)
-title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-title.Text = "NoMercy Hub 💀"
-title.TextScaled = true
-title.TextColor3 = Color3.fromRGB(255, 85, 85)
+title.BackgroundTransparency = 1
+title.Text = "SpeedHub - Steal a Brainroot"
 title.Font = Enum.Font.GothamBold
-title.BorderSizePixel = 0
-title.ClipsDescendants = true
+title.TextSize = 28
+title.TextColor3 = Color3.fromRGB(255, 85, 85)
+title.Parent = frame
 
-local uiCornerTitle = Instance.new("UICorner", title)
-uiCornerTitle.CornerRadius = UDim.new(0, 15)
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 24
+closeBtn.TextColor3 = Color3.fromRGB(255, 85, 85)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Size = UDim2.new(0, 40, 0, 40)
+closeBtn.Position = UDim2.new(1, -45, 0, 10)
+closeBtn.Parent = frame
 
--- دعم السحب من العنوان فقط
-local dragging, dragStart, startPos
-
-title.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = frame.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then dragging = false end
-		end)
-	end
+closeBtn.MouseButton1Click:Connect(function()
+	screenGui.Enabled = false
+	openBtn.Visible = true
 end)
 
-UIS.InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStart
-		frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
+-- Open Button (image button)
+local openBtn = Instance.new("ImageButton")
+openBtn.Size = UDim2.new(0, 70, 0, 70)
+openBtn.Position = UDim2.new(0, 20, 0, 20)
+openBtn.Image = "rbxassetid://4094500112762930" -- صورة البادج القديمة
+openBtn.BackgroundTransparency = 1
+openBtn.Visible = false
+openBtn.Parent = game.CoreGui
+
+openBtn.MouseButton1Click:Connect(function()
+	screenGui.Enabled = true
+	openBtn.Visible = false
 end)
 
--- زر فتح الواجهة بصورة البادج القديمة
-local open = Instance.new("ImageButton", gui)
-open.Size = UDim2.new(0, 70, 0, 70)
-open.Position = UDim2.new(0, 15, 0, 15)
-open.BackgroundTransparency = 1
-open.Visible = false
-open.AutoButtonColor = false
-local uiCornerOpen = Instance.new("UICorner", open)
-uiCornerOpen.CornerRadius = UDim.new(0, 12)
-
--- استخدم صورة البادج القديم
-open.Image = "rbxassetid://4094500112762930"
-
-open.MouseEnter:Connect(function()
-	open.ImageColor3 = Color3.fromRGB(255, 150, 150)
-end)
-open.MouseLeave:Connect(function()
-	open.ImageColor3 = Color3.fromRGB(255, 255, 255)
-end)
-
-open.MouseButton1Click:Connect(function()
-	Sound:Play()
-	frame.Visible = true
-	open.Visible = false
-end)
-
--- زر إغلاق الواجهة
-local close = Instance.new("TextButton", frame)
-close.Size = UDim2.new(0.3, 0, 0, 45)
-close.Position = UDim2.new(0.65, 0, 0, 10)
-close.Text = "Close GUI"
-close.TextColor3 = Color3.new(1,1,1)
-close.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-close.Font = Enum.Font.GothamSemibold
-close.TextSize = 20
-close.AutoButtonColor = true
-local uiCornerClose = Instance.new("UICorner", close)
-uiCornerClose.CornerRadius = UDim.new(0, 10)
-
-close.MouseButton1Click:Connect(function()
-	Sound:Play()
-	frame.Visible = false
-	open.Visible = true
-end)
-
--- باقي الكود وأزرار التفعيل (Auto Steal، ESP، Fly، Speed) كما هو
-
-local function makeToggle(text, y)
-	local btn = Instance.new("TextButton", frame)
-	btn.Size = UDim2.new(0.9, 0, 0, 45)
-	btn.Position = UDim2.new(0.05, 0, 0, y)
-	btn.Text = text
-	btn.TextColor3 = Color3.new(1,1,1)
-	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	btn.Font = Enum.Font.Gotham
+-- Function to create toggles
+local function createToggle(name, y)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 300, 0, 45)
+	btn.Position = UDim2.new(0, 25, 0, y)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamSemibold
 	btn.TextSize = 20
-	btn.AutoButtonColor = true
-	local uiCornerBtn = Instance.new("UICorner", btn)
-	uiCornerBtn.CornerRadius = UDim.new(0, 10)
+	btn.Text = name .. ": OFF"
+	btn.Parent = frame
+
+	local enabled = false
+
+	btn.MouseButton1Click:Connect(function()
+		enabled = not enabled
+		btn.Text = name .. (enabled and ": ON" or ": OFF")
+		btn.BackgroundColor3 = enabled and Color3.fromRGB(100, 180, 100) or Color3.fromRGB(50, 50, 50)
+		if name == "Auto Steal" then
+			autoSteal = enabled
+		elseif name == "ESP" then
+			espEnabled = enabled
+			if not enabled then
+				-- إزالة ESP من اللاعبين
+				for _, p in pairs(Players:GetPlayers()) do
+					if p ~= player and p.Character then
+						local adorn = p.Character:FindFirstChild("ESPBox")
+						if adorn then adorn:Destroy() end
+					end
+				end
+			end
+		elseif name == "Fly" then
+			flyEnabled = enabled
+			if flyEnabled then
+				flyVelocity = Instance.new("BodyVelocity")
+				flyVelocity.MaxForce = Vector3.new(9e4, 9e4, 9e4)
+				flyVelocity.Parent = HRP
+			else
+				if flyVelocity then
+					flyVelocity:Destroy()
+				end
+			end
+		end
+	end)
+
 	return btn
 end
 
-local btnSteal = makeToggle("Toggle Auto Steal", 80)
-local btnESP   = makeToggle("Toggle ESP", 140)
-local btnFly   = makeToggle("Toggle Fly", 200)
-local btnSpeed = makeToggle("Toggle Speed", 260)
+local autoStealBtn = createToggle("Auto Steal", 90)
+local espBtn = createToggle("ESP", 150)
+local flyBtn = createToggle("Fly", 210)
 
--- ... (كود وظائف الأزرار كما في ردودك السابقة) ...
+-- Speed Slider
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Text = "Speed: 16"
+speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Position = UDim2.new(0, 25, 0, 270)
+speedLabel.Size = UDim2.new(0, 300, 0, 30)
+speedLabel.Font = Enum.Font.GothamSemibold
+speedLabel.TextSize = 20
+speedLabel.Parent = frame
 
--- مثال تشغيل الأزرار (تقدر تطلب مني أضيف باقي التفاصيل لو تبي)
+local speedSlider = Instance.new("Frame")
+speedSlider.Size = UDim2.new(0, 300, 0, 10)
+speedSlider.Position = UDim2.new(0, 25, 0, 310)
+speedSlider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+speedSlider.Parent = frame
+local sliderFill = Instance.new("Frame")
+sliderFill.Size = UDim2.new(0, 48, 0, 10) -- 16/32 * 300 تقريباً
+sliderFill.BackgroundColor3 = Color3.fromRGB(255, 85, 85)
+sliderFill.Parent = speedSlider
 
-btnFly.MouseButton1Click:Connect(function()
-	Sound:Play()
-	runningFly = not runningFly
-	if runningFly then
-		flyForce = Instance.new("BodyVelocity", HRP)
-		flyForce.MaxForce = Vector3.new(9e4,9e4,9e4)
-		flyForce.Velocity = Vector3.new(0,0,0)
-		coroutine.wrap(function()
-			while runningFly and flyForce.Parent do
-				flyForce.Velocity = LocalPlayer:GetMouse().Hit.LookVector * 50
-				task.wait()
-			end
-		end)()
-	else
-		if flyForce then flyForce:Destroy() end
+local draggingSlider = false
+
+speedSlider.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		draggingSlider = true
 	end
 end)
 
-btnSpeed.MouseButton1Click:Connect(function()
-	Sound:Play()
-	runningSpeed = not runningSpeed
-	local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-	if hum then hum.WalkSpeed = runningSpeed and 32 or 16 end
+speedSlider.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		draggingSlider = false
+	end
 end)
 
-btnSteal.MouseButton1Click:Connect(function()
-	Sound:Play()
-	runningAuto = not runningAuto
-	btnSteal.BackgroundColor3 = runningAuto and Color3.fromRGB(50,150,50) or Color3.fromRGB(60,60,60)
+speedSlider.InputChanged:Connect(function(input)
+	if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local pos = math.clamp(input.Position.X - speedSlider.AbsolutePosition.X, 0, speedSlider.AbsoluteSize.X)
+		sliderFill.Size = UDim2.new(0, pos, 0, 10)
+		speedValue = math.floor((pos / speedSlider.AbsoluteSize.X) * 32)
+		if speedValue < 16 then speedValue = 16 end
+		speedLabel.Text = "Speed: " .. speedValue
+		if humanoid then humanoid.WalkSpeed = speedValue end
+	end
 end)
 
-btnESP.MouseButton1Click:Connect(function()
-	Sound:Play()
-	runningESP = not runningESP
-	btnESP.BackgroundColor3 = runningESP and Color3.fromRGB(50,150,50) or Color3.fromRGB(60,60,60)
+-- وظائف autoSteal (سرقة Brainroot والرجوع للقاعدة الخاصة)
+
+local function getClosestBrainroot()
+	local closest = nil
+	local dist = math.huge
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj.Name == "StealHitbox" and obj:IsA("BasePart") then
+			local d = (HRP.Position - obj.Position).Magnitude
+			if d < dist then
+				closest = obj
+				dist = d
+			end
+		end
+	end
+	return closest
+end
+
+local function getMyBase()
+	-- لو لعبتك تحدد قاعدة اللاعب بطريقة خاصة، عدل هذه الدالة
+	-- مثال: القاعدة تكون جزء في workspace اسمه PlayerBases ويحوي أجزاء لكل لاعب باسمهم
+	-- هنا مجرد مثال افتراضي:
+	local basesFolder = workspace:FindFirstChild("PlayerBases")
+	if basesFolder then
+		for _, basePart in pairs(basesFolder:GetChildren()) do
+			if basePart.Name == player.Name then
+				return basePart
+			end
+		end
+	end
+	-- إذا ما فيه طريقة محددة، ترجع nil أو جزء ثابت باللعبة
+	return nil
+end
+
+local function teleportTo(part)
+	if not part then return end
+	for i = 1, 50 do
+		HRP.CFrame = HRP.CFrame:Lerp(CFrame.new(part.Position + Vector3.new(0,3,0)), 0.1)
+		task.wait(0.01)
+	end
+end
+
+spawn(function()
+	while task.wait(1) do
+		if autoSteal then
+			local brain = getClosestBrainroot()
+			if brain then
+				teleportTo(brain)
+				firetouchinterest(HRP, brain, 0)
+				firetouchinterest(HRP, brain, 1)
+				task.wait(0.5)
+				local base = getMyBase()
+				if base then
+					teleportTo(base)
+					firetouchinterest(HRP, base, 0)
+					firetouchinterest(HRP, base, 1)
+				end
+			end
+		end
+	end
 end)
 
-UIS.InputBegan:Connect(function(input)
-	if input.KeyCode == Enum.KeyCode.RightControl then
-		frame.Visible = not frame.Visible
-		open.Visible = not open.Visible
+-- ESP loop
+RunService.Heartbeat:Connect(function()
+	if espEnabled then
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+				if not p.Character:FindFirstChild("ESPBox") then
+					local box = Instance.new("BoxHandleAdornment")
+					box.Name = "ESPBox"
+					box.Adornee = p.Character.HumanoidRootPart
+					box.Size = Vector3.new(4, 5, 2)
+					box.Color3 = Color3.fromRGB(0, 255, 0)
+					box.Transparency = 0.5
+					box.AlwaysOnTop = true
+					box.Parent = p.Character
+				end
+			end
+		end
+	else
+		for _, p in pairs(Players:GetPlayers()) do
+			if p.Character then
+				local box = p.Character:FindFirstChild("ESPBox")
+				if box then box:Destroy() end
+			end
+		end
+	end
+end)
+
+-- Fly update loop
+RunService.Heartbeat:Connect(function()
+	if flyEnabled and flyVelocity then
+		local mouse = player:GetMouse()
+		flyVelocity.Velocity = mouse.Hit.LookVector * 50
+	end
+end)
+
+-- اختصار لوحة مفاتيح لفتح/إغلاق الواجهة
+UIS.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == Enum.KeyCode.RightControl then
+		screenGui.Enabled = not screenGui.Enabled
+		openBtn.Visible = not screenGui.Enabled
 		Sound:Play()
 	end
 end)
+
+-- تعيين سرعة المشي الافتراضية
+humanoid.WalkSpeed = speedValue
