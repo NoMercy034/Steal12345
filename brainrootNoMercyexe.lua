@@ -1,19 +1,16 @@
--- NoMercy Hub 💀 - مع واجهة GUI تتحرك بالماوس
+-- NoMercy Hub 💀 - GUI قابل للسحب بالكامل بالماوس واللمس
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local HRP = LocalPlayer.Character:WaitForChild("HumanoidRootPart")
 local UIS = game:GetService("UserInputService")
 
--- حالات الميزات
 local runningAuto, runningESP, runningFly, runningSpeed = false, false, false, false
 local flyForce
 
--- أصوات
 local Sound = Instance.new("Sound", HRP)
 Sound.SoundId = "rbxassetid://12222105"
 Sound.Volume = 1
 
--- واجهة GUI
 local gui = Instance.new("ScreenGui", game.CoreGui)
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 300, 0, 350)
@@ -21,10 +18,9 @@ frame.Position = UDim2.new(0, 200, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 
--- ✅ تمكين السحب
+-- ✅ تمكين السحب على كامل الإطار
 frame.Active = true
 
--- عنوان الهوب (هو الجزء القابل للسحب)
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 50)
 title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -33,10 +29,10 @@ title.TextScaled = true
 title.TextColor3 = Color3.fromRGB(255, 85, 85)
 title.Font = Enum.Font.GothamBold
 
--- 🖱️ كود السحب بالماوس
-local dragging, dragInput, dragStart, startPos
+-- كود السحب على كامل الإطار
+local dragging, dragStart, startPos
 
-title.InputBegan:Connect(function(input)
+frame.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		dragging = true
 		dragStart = input.Position
@@ -54,7 +50,6 @@ UIS.InputChanged:Connect(function(input)
 	end
 end)
 
--- زر فتح GUI بصورة
 local open = Instance.new("ImageButton", gui)
 open.Size = UDim2.new(0, 60, 0, 60)
 open.Position = UDim2.new(0, 10, 0, 10)
@@ -62,7 +57,6 @@ open.Image = "rbxassetid://4094500112762930"
 open.BackgroundTransparency = 1
 open.Visible = false
 
--- زر إغلاق GUI
 local close = Instance.new("TextButton", frame)
 close.Size = UDim2.new(0, 100, 0, 40)
 close.Position = UDim2.new(1, -110, 0, 10)
@@ -84,7 +78,6 @@ open.MouseButton1Click:Connect(function()
 	open.Visible = false
 end)
 
--- أزرار التفعيل
 local function makeToggle(text, y)
 	local btn = Instance.new("TextButton", frame)
 	btn.Size = UDim2.new(0, 260, 0, 40)
@@ -102,7 +95,6 @@ local btnESP   = makeToggle("Toggle ESP", 120)
 local btnFly   = makeToggle("Toggle Fly", 170)
 local btnSpeed = makeToggle("Toggle Speed", 220)
 
--- الوظائف:
 local function getClosestBrain()
 	local closest, dist = nil, math.huge
 	for _,v in pairs(workspace:GetDescendants()) do
