@@ -1,122 +1,134 @@
--- NoMercy.exe | Steal a Brainroot Script
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+-- NoMercy.exe | SpeedHub X Style
+local Players, UIS, RS = game:GetService("Players"), game:GetService("UserInputService"), game:GetService("RunService")
+local LP = Players.LocalPlayer
+local Char = LP.Character or LP.CharacterAdded:Wait()
+local HRP = Char:WaitForChild("HumanoidRootPart")
+local Humanoid = Char:WaitForChild("Humanoid")
 
-local player = LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local HRP = character:WaitForChild("HumanoidRootPart")
-local humanoid = character:WaitForChild("Humanoid")
+local autoSteal, flyEnabled, running, currentSpeed = false, false, true, 16
+local velocity = Instance.new("BodyVelocity")
+velocity.MaxForce = Vector3.new(9e5,9e5,9e5)
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "NoMercyGUI"
 
--- Variables
-local autoSteal = false
-local flyEnabled = false
-local running = true
-
--- Sound effect
-local Sound = Instance.new("Sound", HRP)
-Sound.SoundId = "rbxassetid://12222105"
-Sound.Volume = 1
-
--- GUI Setup
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NoMercyExeGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = game.CoreGui
-
-local frame = Instance.new("Frame")
+local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 350, 0, 420)
 frame.Position = UDim2.new(0.5, -175, 0.5, -210)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
-frame.Active = true
-frame.Draggable = true
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.Active, frame.Draggable = true, true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-local uicorner = Instance.new("UICorner")
-uicorner.CornerRadius = UDim.new(0, 15)
-uicorner.Parent = frame
-
--- Title
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 60)
-title.BackgroundTransparency = 1
-title.Text = "NoMercy.exe - Steal a Brainroot"
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, 0, 0, 50)
+title.Text = "NoMercy.exe"
 title.Font = Enum.Font.GothamBold
-title.TextSize = 26
-title.TextColor3 = Color3.fromRGB(255, 85, 85)
-title.Parent = frame
+title.TextSize = 22
+title.BackgroundColor3 = Color3.fromRGB(35,35,35)
+title.TextColor3 = Color3.fromRGB(255,255,255)
 
--- Close Button
-local closeBtn = Instance.new("TextButton")
-closeBtn.Text = "Close GUI"
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0, 80, 0, 35)
+closeBtn.Position = UDim2.new(1, -90, 0, 10)
+closeBtn.Text = "Close"
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 22
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-closeBtn.Size = UDim2.new(0, 110, 0, 45)
-closeBtn.Position = UDim2.new(1, -120, 0, 10)
-closeBtn.Parent = frame
-local closeUicorner = Instance.new("UICorner", closeBtn)
-closeUicorner.CornerRadius = UDim.new(0, 10)
+closeBtn.TextSize = 18
+closeBtn.BackgroundColor3 = Color3.fromRGB(150,0,0)
+closeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", closeBtn)
 
--- Open Button (صورة زر فتح الواجهة)
-local openBtn = Instance.new("ImageButton")
-openBtn.Size = UDim2.new(0, 70, 0, 70)
-openBtn.Position = UDim2.new(0, 15, 0, 15)
+local openBtn = Instance.new("ImageButton", game.CoreGui)
+openBtn.Size = UDim2.new(0, 60, 0, 60)
+openBtn.Position = UDim2.new(0, 15, 0.5, -30)
+openBtn.Image = "rbxassetid://4094500112762930"
 openBtn.BackgroundTransparency = 1
 openBtn.Visible = false
-openBtn.Parent = game.CoreGui
-local openUicorner = Instance.new("UICorner", openBtn)
-openUicorner.CornerRadius = UDim.new(0, 12)
-openBtn.Image = "rbxassetid://4094500112762930" -- صورة البادج اللي طلبتها
 
--- إنشاء أزرار التبديل
-local function createToggle(text, y)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 300, 0, 45)
-	btn.Position = UDim2.new(0, 25, 0, y)
-	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.MouseButton1Click:Connect(function()
+	gui.Enabled = false
+	openBtn.Visible = true
+end)
+openBtn.MouseButton1Click:Connect(function()
+	gui.Enabled = true
+	openBtn.Visible = false
+end)
+
+function makeToggle(text, posY, callback)
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(0, 300, 0, 40)
+	btn.Position = UDim2.new(0, 25, 0, posY)
+	btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	btn.TextColor3 = Color3.fromRGB(255,255,255)
 	btn.Font = Enum.Font.GothamSemibold
-	btn.TextSize = 20
+	btn.TextSize = 18
 	btn.Text = text .. ": OFF"
-	btn.Parent = frame
-
-	local enabled = false
-
+	local state = false
 	btn.MouseButton1Click:Connect(function()
-		enabled = not enabled
-		btn.Text = text .. (enabled and ": ON" or ": OFF")
-		btn.BackgroundColor3 = enabled and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(60, 60, 60)
-		if text == "Auto Steal" then
-			autoSteal = enabled
-		elseif text == "Fly" then
-			flyEnabled = enabled
-		end
+		state = not state
+		btn.Text = text .. (state and ": ON" or ": OFF")
+		btn.BackgroundColor3 = state and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(50, 50, 50)
+		callback(state)
 	end)
-
-	return btn
 end
 
-local btnAutoSteal = createToggle("Auto Steal", 90)
-local btnFly = createToggle("Fly", 150)
+makeToggle("Auto Steal", 60, function(val) autoSteal = val end)
+makeToggle("Fly", 120, function(val) flyEnabled = val end)
 
--- دالة العثور على BrainGod (شرط للسرقة)
-local function findBrainGod()
+local speedBtn = Instance.new("TextButton", frame)
+speedBtn.Size = UDim2.new(0, 300, 0, 40)
+speedBtn.Position = UDim2.new(0, 25, 0, 180)
+speedBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+speedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBtn.Font = Enum.Font.GothamSemibold
+speedBtn.TextSize = 18
+speedBtn.Text = "Speed: 16"
+speedBtn.Parent = frame
+
+local speeds = {16, 50, 100}
+local speedIndex = 1
+
+speedBtn.MouseButton1Click:Connect(function()
+	speedIndex = speedIndex % #speeds + 1
+	currentSpeed = speeds[speedIndex]
+	Humanoid.WalkSpeed = currentSpeed
+	speedBtn.Text = "Speed: " .. currentSpeed
+end)
+
+-- ESP
+function addESP(part, text)
+	local bb = Instance.new("BillboardGui", part)
+	bb.Size = UDim2.new(0,100,0,40)
+	bb.Adornee = part
+	bb.AlwaysOnTop = true
+	local label = Instance.new("TextLabel", bb)
+	label.Size = UDim2.new(1,0,1,0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(255,255,0)
+	label.TextScaled = true
+end
+
+for _, p in pairs(Players:GetPlayers()) do
+	if p ~= LP and p.Character and p.Character:FindFirstChild("Head") then
+		addESP(p.Character.Head, p.Name)
+	end
+end
+
+for _, b in pairs(workspace:GetDescendants()) do
+	if b.Name == "StealHitbox" and b:IsA("BasePart") then
+		addESP(b, "Brainroot")
+	end
+end
+
+-- Auto Steal
+function findBrainGod()
 	for _, obj in pairs(workspace:GetDescendants()) do
-		if obj.Name == "BrainGod" and obj:IsA("BasePart") then
-			return obj
-		end
+		if obj.Name == "BrainGod" and obj:IsA("BasePart") then return obj end
 	end
 	return nil
 end
 
--- دالة العثور على أقرب Brainroot
-local function getClosestBrainroot()
-	local closest = nil
-	local dist = math.huge
+function getClosestBrain()
+	local closest, dist = nil, math.huge
 	for _, obj in pairs(workspace:GetDescendants()) do
 		if obj.Name == "StealHitbox" and obj:IsA("BasePart") then
 			local d = (HRP.Position - obj.Position).Magnitude
@@ -129,118 +141,62 @@ local function getClosestBrainroot()
 	return closest
 end
 
--- دالة الحصول على قاعدة اللاعب الخاصة
-local function getMyBase()
-	local basesFolder = workspace:FindFirstChild("PlayerBases")
-	if basesFolder then
-		for _, basePart in pairs(basesFolder:GetChildren()) do
-			if basePart.Name == player.Name then
-				return basePart
-			end
+function getBase()
+	local folder = workspace:FindFirstChild("PlayerBases")
+	if folder then
+		for _, base in pairs(folder:GetChildren()) do
+			if base.Name == LP.Name then return base end
 		end
 	end
 	return nil
 end
 
--- دالة النقل بسلاسة إلى جزء معين
-local function teleportTo(part)
-	if not part then return end
-	for i = 1, 50 do
-		HRP.CFrame = HRP.CFrame:Lerp(CFrame.new(part.Position + Vector3.new(0,3,0)), 0.2)
+function teleportTo(part)
+	for i=1, 50 do
+		HRP.CFrame = HRP.CFrame:Lerp(part.CFrame + Vector3.new(0,3,0), 0.2)
 		task.wait(0.01)
 	end
 end
 
--- حلقة السرقه الأوتوماتيكية مع شرط وجود BrainGod
-spawn(function()
+task.spawn(function()
 	while running do
 		task.wait(0.5)
-		if autoSteal then
-			local brainGod = findBrainGod()
-			if brainGod then
-				local brainroot = getClosestBrainroot()
-				if brainroot then
-					teleportTo(brainroot)
-					firetouchinterest(HRP, brainroot, 0)
-					firetouchinterest(HRP, brainroot, 1)
-					task.wait(0.3)
-					local base = getMyBase()
-					if base then
-						teleportTo(base)
-						firetouchinterest(HRP, base, 0)
-						firetouchinterest(HRP, base, 1)
-					end
+		if autoSteal and findBrainGod() then
+			local brain = getClosestBrain()
+			if brain then
+				teleportTo(brain)
+				firetouchinterest(HRP, brain, 0)
+				firetouchinterest(HRP, brain, 1)
+				task.wait(0.3)
+				local base = getBase()
+				if base then
+					teleportTo(base)
+					firetouchinterest(HRP, base, 0)
+					firetouchinterest(HRP, base, 1)
 				end
 			end
 		end
 	end
 end)
 
--- نظام الطيران الحر (WASD + تحريك كاميرا)
+-- Fly
 local flying = false
-local flySpeed = 50
-local velocity = Instance.new("BodyVelocity")
-velocity.MaxForce = Vector3.new(9e4, 9e4, 9e4)
-velocity.Velocity = Vector3.new(0,0,0)
-
-local function startFlying()
-	if flying then return end
-	flying = true
-	velocity.Parent = HRP
-	RunService:BindToRenderStep("FlyStep", 301, function()
-		if flyEnabled and flying then
-			local moveDirection = Vector3.new()
-			if UIS:IsKeyDown(Enum.KeyCode.W) then
-				moveDirection = moveDirection + workspace.CurrentCamera.CFrame.LookVector
-			end
-			if UIS:IsKeyDown(Enum.KeyCode.S) then
-				moveDirection = moveDirection - workspace.CurrentCamera.CFrame.LookVector
-			end
-			if UIS:IsKeyDown(Enum.KeyCode.A) then
-				moveDirection = moveDirection - workspace.CurrentCamera.CFrame.RightVector
-			end
-			if UIS:IsKeyDown(Enum.KeyCode.D) then
-				moveDirection = moveDirection + workspace.CurrentCamera.CFrame.RightVector
-			end
-			if moveDirection.Magnitude > 0 then
-				moveDirection = moveDirection.Unit * flySpeed
-			end
-			velocity.Velocity = moveDirection
-		else
-			velocity.Velocity = Vector3.new(0,0,0)
-		end
-	end)
-end
-
-local function stopFlying()
-	flying = false
-	RunService:UnbindFromRenderStep("FlyStep")
-	velocity.Parent = nil
-end
-
--- مراقبة تفعيل الطيران
-RunService.Heartbeat:Connect(function()
+RS.Heartbeat:Connect(function()
 	if flyEnabled and not flying then
-		startFlying()
+		velocity.Parent = HRP
+		flying = true
 	elseif not flyEnabled and flying then
-		stopFlying()
+		velocity.Parent = nil
+		flying = false
+	end
+	if flying then
+		local dir = Vector3.new()
+		if UIS:IsKeyDown(Enum.KeyCode.W) then dir += workspace.CurrentCamera.CFrame.LookVector end
+		if UIS:IsKeyDown(Enum.KeyCode.S) then dir -= workspace.CurrentCamera.CFrame.LookVector end
+		if UIS:IsKeyDown(Enum.KeyCode.A) then dir -= workspace.CurrentCamera.CFrame.RightVector end
+		if UIS:IsKeyDown(Enum.KeyCode.D) then dir += workspace.CurrentCamera.CFrame.RightVector end
+		velocity.Velocity = dir.Magnitude > 0 and dir.Unit * 50 or Vector3.zero
 	end
 end)
 
--- أزرار التحكم
-closeBtn.MouseButton1Click:Connect(function()
-	Sound:Play()
-	frame.Visible = false
-	openBtn.Visible = true
-end)
-
-openBtn.MouseButton1Click:Connect(function()
-	Sound:Play()
-	frame.Visible = true
-	openBtn.Visible = false
-end)
-
--- إغلاق السكربت لو خرج اللاعب أو مات
-player.CharacterRemoving:Connect(function()
-	running = false
-end)
+LP.CharacterRemoving:Connect(function() running = false end)
