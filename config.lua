@@ -1,70 +1,37 @@
--- NoMercy034 | CONFIG SYSTEM
-
 local HttpService = game:GetService("HttpService")
-local configFile = "config.json"
 
 local config = {
-    autoload = false,
-    selectedConfig = "default",
+    autoload = true,
+    selected = "default",
     configs = {
         default = {
             fly = false,
             speed = 16,
             superJump = false,
-            esp = false,
-            tpToSky = false
+            esp = false
         }
     }
 }
 
--- تحميل الإعدادات من ملف config.json إذا كان موجود
-if readfile and isfile and isfile(configFile) then
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(readfile(configFile))
-    end)
-    if success then
-        config = result
-    end
-end
-
--- دالة لحفظ الإعدادات في ملف config.json
-local function saveConfig()
+local function save()
     if writefile then
-        local json = HttpService:JSONEncode(config)
-        writefile(configFile, json)
+        writefile("config.json", HttpService:JSONEncode(config))
     end
 end
 
--- تطبيق الإعدادات المحملة تلقائيًا عند بدء السكربت لو autoload مفعل
-local selected = config.configs[config.selectedConfig]
-if config.autoload and selected then
-    flyEnabled = selected.fly or false
-    currentSpeed = selected.speed or 16
-    superJump = selected.superJump or false
-    espEnabled = selected.esp or false
-    tpToSkyEnabled = selected.tpToSky or false
+local function load()
+    if readfile and isfile("config.json") then
+        local data = HttpService:JSONDecode(readfile("config.json"))
+        if data and data.configs then
+            config = data
+        end
+    end
 end
 
--- مثال: دالة لتغيير حالة الطيران وحفظ الإعدادات
-local function setFly(enabled)
-    flyEnabled = enabled
-    config.configs[config.selectedConfig].fly = enabled
-    saveConfig()
-end
-
--- مثال: دالة لتغيير السرعة وحفظ الإعدادات
-local function setSpeed(value)
-    currentSpeed = value
-    config.configs[config.selectedConfig].speed = value
-    saveConfig()
-end
-
--- يمكنك بناء دوال مماثلة لباقي الإعدادات
+load()
 
 return {
-    config = config,
-    saveConfig = saveConfig,
-    setFly = setFly,
-    setSpeed = setSpeed
-    -- أضف باقي الدوال حسب حاجتك
+    data = config,
+    save = save,
+    load = load
 }
